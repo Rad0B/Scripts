@@ -1,0 +1,6 @@
+"Time","Path","WasAuditinPlace","Account","AuditType","AuditRules","Comments"
+"17-11-2022 10:05:33","\\localhost\K_drive\dafaf","True","Everyone ","Success","CreateFiles, AppendData, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership",""
+"17-11-2022 10:05:33","\\localhost\K_drive\dsadadada","True","Everyone ","Success","CreateFiles, AppendData, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership",""
+"17-11-2022 10:05:33","\\localhost\K_drive\Share_no_1","True","Everyone ","Success","CreateFiles, AppendData, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership",""
+"17-11-2022 10:05:33","\\localhost\K_drive\Share_no_2","True","Everyone ","Success","CreateFiles, AppendData, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership",""
+"17-11-2022 10:05:33","\\localhost\K_drive\Share_no_3","True","Everyone ","Success","CreateFiles, AppendData, DeleteSubdirectoriesAndFiles, Delete, ChangePermissions, TakeOwnership",""
