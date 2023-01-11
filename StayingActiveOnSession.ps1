@@ -3,6 +3,7 @@
 #   To run StayingActiveOnSession.ps1 script select 'Run with Powershell'
 #   To terminate press "Ctrl + C" or close command line window
 #
+#
 
 function StayingActiveOnSession{
     [CmdletBinding()]
