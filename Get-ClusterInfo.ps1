@@ -4,7 +4,7 @@ function Get-ClusterInfo{
     param(
         [Parameter(Mandatory=$false,ValueFromPipeline)]
         [string]$Cluster = $($env:COMPUTERNAME),
-        [switch]$Detailed # to check
+        [switch]$Detailed = $false # to check
     )      
 
     # use this server as testing environment -> sf100sv90532.jnmain50.corp.jndata.net
@@ -93,8 +93,8 @@ function Get-ClusterInfo{
 
             if($Detailed){
 
-                Write-Host "Disks" -ForegroundColor Cyan -NoNewline
                 $ClusterResourceDisks = $Clustername | Get-ClusterResource | ? resourcetype -EQ "Physical Disk"
+                Write-Host "Disks ($($ClusterResourceDisks.Count))" -ForegroundColor Cyan -NoNewline
                 $DiskInfo=@()
                 if(!($ClusterResourceDisks.count)){
                     Write-Host ""
@@ -113,13 +113,18 @@ function Get-ClusterInfo{
                     
                     #if($ClusterResourceDisk1.OwnerGroup -eq 'Available Storage'){"AS"}
 
+                    #HealthStatus info
+                        $Health = Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
+                                {Get-Volume -Path "\\?\Volume{$(($using:MSClusterPartition).VolumeGuid)}\"}
+
                         $DiskInfo += [PSCustomObject]@{
                             Name = $ClusterResourceDisk1.Name;
                             ClusterRole = $ClusterResourceDisk1.OwnerGroup
-                            DriveLetter = $MSClusterPartition.Path
+                            'DriveLetter / GUID' = $MSClusterPartition.Path
                             'FreeSpace%' = "$([math]::Round(($MSClusterPartition.FreeSpace / $MSClusterPartition.TotalSize)*100,2))%"
                             #'FreeSpace%' = "Free: $($MSClusterPartition.FreeSpace) / Total Size: $($MSClusterPartition.TotalSize)"
-                            HealthStatus = ''
+                            HealthStatus = $Health.HealthStatus
+                            OperationalStatus = $Health.OperationalStatus
                         }
                     }
                 }

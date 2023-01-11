@@ -7,8 +7,6 @@ param(
     [int]$SleepTimeBetweenPaths = 0
 )
 
-
-
 ######################
 #
 #   Script variables
@@ -25,7 +23,6 @@ $MappedDriveLetterPath = $MappedDriveLetterPath.TrimEnd(":").TrimEnd("\")
 $MappedDrive = (Get-ItemProperty "HKCU:\Network\$($MappedDriveLetterPath)").RemotePath #make it dynamic depending on mapped drive letter
 [array]$MappedDriveFolders = Get-ChildItem -Path $MappedDrive | Where-Object {$_.PSIsContainer -eq $true}
 
-
 $ProgressCounter = 1
 
 ######################################
@@ -34,12 +31,10 @@ $ProgressCounter = 1
 #
 ######################################
 
-
 $LogsFolder = "$PSScriptRoot\Logs"
     if(!(Test-Path $LogsFolder)){
-         $null = New-Item -Path $LogsFolder -ItemType Directory
-        }
-
+        [void](New-Item -Path $LogsFolder -ItemType Directory)
+    }
 
 ########################
 #
@@ -53,7 +48,7 @@ function Write-Log {
         [Parameter()]
         [ValidateNotNullOrEmpty()]
         [string]$AuditPath,
- 
+
         [Parameter()]
         [string]$WasAuditinPlace,
 
@@ -83,7 +78,7 @@ function Write-Log {
             Comments = ''
 
         } | Export-Csv -Path $LogPath -Append -NoTypeInformation
- }
+}
 
 ###############
 #
