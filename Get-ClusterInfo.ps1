@@ -6,6 +6,10 @@ function Get-ClusterInfo{
         [string]$Cluster = $($env:COMPUTERNAME),
         [switch]$Detailed # to check
     )      
+
+    # use this server as testing environment -> sf100sv90532.jnmain50.corp.jndata.net
+    #
+    #
     #verify that cluster service is running - try - catch if cluster service is stopped - c
     #remote capbilittes
     #disk sizes and locations - maybe a switch operator
