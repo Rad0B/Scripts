@@ -8,7 +8,7 @@ $export = 'W:\My Documents\activation issues\source3.csv'
 $uri="http://ciextended.corp.jndata.net/api/ciapi"
 $CIE = Invoke-RestMethod -Uri $uri
 #Write-Host 'DONE' -ForegroundColor Green
-
+##
 #$list = get-content 'W:\My Documents\activation issues\source.txt'
 $list = @"
 SF600LX00107

@@ -9,12 +9,9 @@ function Get-ClusterInfo{
 
     # use this server as testing environment -> sf100sv90532.jnmain50.corp.jndata.net
     #
-    #
-    #verify that cluster service is running - try - catch if cluster service is stopped - c
-    #remote capbilittes
     #disk sizes and locations - maybe a switch operator
-    #cluster shares details
-    #last cluster events
+    #cluster shares details 
+    #last cluster events last 24h
             
     #Virtual Terminal escape sequences
     begin{
@@ -101,21 +98,22 @@ function Get-ClusterInfo{
                     Write-Host "No cluster disks configured" -ForegroundColor Yellow 
                 }
                 else{
-                    $ClusterResourceDisks | % {
+                    $ClusterResourceDisks | ForEach-Object {
 
                     $ClusterResourceDisk1 = $_
                     $MSClusterRes = Get-WmiObject MSCluster_Resource -Namespace root/mscluster -ComputerName $Clustername.Name  | ? { $_.ID -eq $ClusterResourceDisk1.ID}
                     $MSClusterDisk = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterRes} Where ResultClass=MSCluster_Disk" -ComputerName $Clustername.Name 
                     $MSClusterPartition = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterDisk} Where ResultClass=MSCluster_DiskPartition" -ComputerName $Clustername.Name
-                    
-                    #if($MSClusterPartition.FreeSpace -eq $null){$MSClusterPartition.FreeSpace = 0}
-                    #if($MSClusterPartition.TotalSize -eq $null){$MSClusterPartition.TotalSize = 0}
-                    
-                    #if($ClusterResourceDisk1.OwnerGroup -eq 'Available Storage'){"AS"}
 
                     #HealthStatus info
-                        $Health = Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
+                        $Health = {
+                            if ($ClusterResourceDisk1.OwnerNode.Name -eq $env:COMPUTERNAME){
+                                Get-Volume -Path "\\?\Volume{$($MSClusterPartition.VolumeGuid)}\"
+                            } else {
+                                Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
                                 {Get-Volume -Path "\\?\Volume{$(($using:MSClusterPartition).VolumeGuid)}\"}
+                            }
+                        }
 
                         $DiskInfo += [PSCustomObject]@{
                             Name = $ClusterResourceDisk1.Name;
@@ -130,7 +128,6 @@ function Get-ClusterInfo{
                 }
 
                 $DiskInfo | Format-Table -AutoSize -Wrap
-
 
             }
     }
