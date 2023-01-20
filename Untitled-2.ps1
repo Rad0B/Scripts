@@ -1,7 +1,6 @@
 $ss = @"
 sf000sv80325.res000m.sif.jndata.net
-sf000sv80265.acc000m.sif.jndata.net
-sf000sv80292.acc000m.sif.jndata.net
+
 "@ -split "\r\n"
 
 $FailingHosts = @()

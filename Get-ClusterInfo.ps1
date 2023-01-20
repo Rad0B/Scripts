@@ -106,14 +106,13 @@ function Get-ClusterInfo{
                     $MSClusterPartition = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterDisk} Where ResultClass=MSCluster_DiskPartition" -ComputerName $Clustername.Name
 
                     #HealthStatus info
-                        $Health = {
                             if ($ClusterResourceDisk1.OwnerNode.Name -eq $env:COMPUTERNAME){
-                                Get-Volume -Path "\\?\Volume{$($MSClusterPartition.VolumeGuid)}\"
+                                $Health = Get-Volume -Path "\\?\Volume{$($MSClusterPartition.VolumeGuid)}\"
                             } else {
-                                Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
+                                $Health = Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
                                 {Get-Volume -Path "\\?\Volume{$(($using:MSClusterPartition).VolumeGuid)}\"}
                             }
-                        }
+                        
 
                         $DiskInfo += [PSCustomObject]@{
                             Name = $ClusterResourceDisk1.Name;
