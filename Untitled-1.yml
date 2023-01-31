@@ -1,0 +1,9 @@
+---
+- name: Install HTTP on Linux
+  hosts: web
+  become: true
+  gather_facts: false
+
+  tasks:
+  - name: Install
+...
