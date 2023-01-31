@@ -35,6 +35,7 @@ $LogsFolder = "$PSScriptRoot\Logs"
     if(!(Test-Path $LogsFolder)){
         [void](New-Item -Path $LogsFolder -ItemType Directory)
     }
+[string]$LogsTest = 'Test'
 
 ########################
 #
