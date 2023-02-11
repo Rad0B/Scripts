@@ -11,17 +11,7 @@ $CIE = Invoke-RestMethod -Uri $uri
 ##
 #$list = get-content 'W:\My Documents\activation issues\source.txt'
 $list = @"
-SF600SV00413
-SF600SV00411
-SF600SV00412
-SF600SV00410
-SF600SV00629
-SF600SV00630
-SF600SV00631
-SF600SV00632
-SF600SV00409
-SF600SV00544
-SF600SV00377
+
 "@ -split "\n" | % {$_.trim()}
 $Results=@()
 foreach ($s1 in $list) 
