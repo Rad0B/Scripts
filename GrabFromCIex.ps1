@@ -14,6 +14,7 @@ $OutFileCIext = $CIext | Export-Csv -Path .\Out\CIext_report_$(get-date -Format 
 #
 ##############################
 $list = @"
+<<<<<<< HEAD
 SF600SV00413
 SF600SV00411
 SF600SV00412
@@ -26,6 +27,10 @@ SF600SV00409
 SF600SV00544
 SF600SV00377
 "@ -split "\n" | foreach-object {$_.trim()}
+=======
+
+"@ -split "\n" | % {$_.trim()}
+>>>>>>> d6d66b49f3cee2af7f2d9b6b2c446025f550e95d
 $Results=@()
 foreach ($s1 in $list) 
 {
