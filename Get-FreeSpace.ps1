@@ -5,6 +5,7 @@ function IsConnecting([string[]]$ComputerName = $env:COMPUTERNAME){
 
 }
 
+
 function Get-FreeSpace ([string[]]$DriveLetter,[switch]$AllDrives,[string[]]$ComputerName = $env:COMPUTERNAME){
     
     foreach($ComputerName1 in $ComputerName){
