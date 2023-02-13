@@ -1,15 +1,18 @@
-﻿# script to parse ip's from elastic to human readable host format. If run first time uncomment line 8 and 9.
+﻿
 
-$counter = 0
-
-$export = 'W:\My Documents\activation issues\source3.csv'
 
 #Write-Host 'Importing CI extended database... ' -NoNewline
 $uri="http://ciextended.corp.jndata.net/api/ciapi"
-$CIE = Invoke-RestMethod -Uri $uri
-#Write-Host 'DONE' -ForegroundColor Green
-##
-#$list = get-content 'W:\My Documents\activation issues\source.txt'
+$CIext = Invoke-RestMethod -Uri $uri
+
+$OutFileCIext = $CIext | Export-Csv -Path .\Out\CIext_report_$(get-date -Format "yyyyMMdd_HHmm").csv -NoTypeInformation
+
+
+##############################
+#
+# List of servers to check
+#
+##############################
 $list = @"
 SF600SV00413
 SF600SV00411
@@ -22,7 +25,7 @@ SF600SV00632
 SF600SV00409
 SF600SV00544
 SF600SV00377
-"@ -split "\n" | % {$_.trim()}
+"@ -split "\n" | foreach-object {$_.trim()}
 $Results=@()
 foreach ($s1 in $list) 
 {
@@ -31,7 +34,7 @@ foreach ($s1 in $list)
     
             
         
-        $cie | Where-Object {$_.hostname -eq $s1} | % {
+        $CIext | Where-Object {$_.hostname -eq $s1} | % {
             Write-Host "Processing $s1..." -NoNewline
 
         $TableRow = [PSCustomObject]@{

@@ -100,28 +100,33 @@ function Get-ClusterInfo{
                 else{
                     $ClusterResourceDisks | ForEach-Object {
 
-                    $ClusterResourceDisk1 = $_
-                    $MSClusterRes = Get-WmiObject MSCluster_Resource -Namespace root/mscluster -ComputerName $Clustername.Name  | ? { $_.ID -eq $ClusterResourceDisk1.ID}
-                    $MSClusterDisk = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterRes} Where ResultClass=MSCluster_Disk" -ComputerName $Clustername.Name 
-                    $MSClusterPartition = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterDisk} Where ResultClass=MSCluster_DiskPartition" -ComputerName $Clustername.Name
+                        try{
+                            $ClusterResourceDisk1 = $_
+                            $MSClusterRes = Get-WmiObject MSCluster_Resource -Namespace root/mscluster -ComputerName $Clustername.Name  | ? { $_.ID -eq $ClusterResourceDisk1.ID}
+                            $MSClusterDisk = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterRes} Where ResultClass=MSCluster_Disk" -ComputerName $Clustername.Name 
+                            $MSClusterPartition = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterDisk} Where ResultClass=MSCluster_DiskPartition" -ComputerName $Clustername.Name
 
-                    #HealthStatus info
-                            if ($ClusterResourceDisk1.OwnerNode.Name -eq $env:COMPUTERNAME){
-                                $Health = Get-Volume -Path "\\?\Volume{$($MSClusterPartition.VolumeGuid)}\"
-                            } else {
-                                $Health = Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
-                                {Get-Volume -Path "\\?\Volume{$(($using:MSClusterPartition).VolumeGuid)}\"}
-                            }
-                        
+                            #HealthStatus info
+                                    if ($ClusterResourceDisk1.OwnerNode.Name -eq $env:COMPUTERNAME){
+                                        $Health = Get-Volume -Path "\\?\Volume{$($MSClusterPartition.VolumeGuid)}\"
+                                    } else {
+                                        $Health = Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
+                                        {Get-Volume -Path "\\?\Volume{$(($using:MSClusterPartition).VolumeGuid)}\"}
+                                    }
+                                
 
-                        $DiskInfo += [PSCustomObject]@{
-                            Name = $ClusterResourceDisk1.Name;
-                            ClusterRole = $ClusterResourceDisk1.OwnerGroup
-                            'DriveLetter / GUID' = $MSClusterPartition.Path
-                            'FreeSpace%' = "$([math]::Round(($MSClusterPartition.FreeSpace / $MSClusterPartition.TotalSize)*100,2))%"
-                            #'FreeSpace%' = "Free: $($MSClusterPartition.FreeSpace) / Total Size: $($MSClusterPartition.TotalSize)"
-                            HealthStatus = $Health.HealthStatus
-                            OperationalStatus = $Health.OperationalStatus
+                                $DiskInfo += [PSCustomObject]@{
+                                    Name = $ClusterResourceDisk1.Name;
+                                    ClusterRole = $ClusterResourceDisk1.OwnerGroup
+                                    'Drive/GUID' = $MSClusterPartition.Path
+                                    'FreeSpace%' = "$([math]::Round(($MSClusterPartition.FreeSpace / $MSClusterPartition.TotalSize)*100,2))%"
+                                    #'FreeSpace%' = "Free: $($MSClusterPartition.FreeSpace) / Total Size: $($MSClusterPartition.TotalSize)"
+                                    HealthStatus = $Health.HealthStatus
+                                    OpsStatus = $Health.OperationalStatus
+                                }
+                        }
+                        catch{
+                            ""; Write-Warning "Drive/GUID: $($MSClusterPartition.Path) >> $($Error[0].Exception.Message)"
                         }
                     }
                 }
