@@ -19,7 +19,8 @@ function Get-FreeSpace ([string[]]$DriveLetter,[switch]$AllDrives,[string[]]$Com
                         foreach($DriveLetter1 in $DriveLetter){
 
                             if($DriveLetter1 -match '^\\\\\?\\Vol'){
-                                $LogDiskDetails = Get-Volume -UniqueId $DriveLetter1 -CimSession $ComputerName1
+                                if(!($DriveLetter1 -match '\\$')){$DriveLetter1 += '\'}
+                                $LogDiskDetails = Get-Volume -ObjectId $DriveLetter1 -CimSession $ComputerName1
                                 if($LogDiskDetails){
                                     [Pscustomobject]@{
                                         ComputerName = $ComputerName1 ;
@@ -34,7 +35,7 @@ function Get-FreeSpace ([string[]]$DriveLetter,[switch]$AllDrives,[string[]]$Com
                                 else {Write-Warning "Drive $DriveLetter1 is unavailable on $computername1"}                        
                             }
                             else{
-                                if(!($DriveLetter1 -match '\:$')){$DriveLetter1 = $DriveLetter1 + ':'}
+                                if(!($DriveLetter1 -match '\:$')){$DriveLetter1 += ':'}
                                 $LogDiskDetails = Get-WmiObject -ComputerName $ComputerName1 -Class win32_logicaldisk | Where-Object {$_.DeviceID -eq $DriveLetter1}
                                 if($LogDiskDetails){
                                     [Pscustomobject]@{
