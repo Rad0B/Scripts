@@ -12,6 +12,7 @@ $CIext = Invoke-RestMethod -Uri $uri
 #
 ##############################
 $list = @"
+#IP
 "@ -split "\n" | foreach-object {$_.trim()}
 
 # Adding results to empty array
@@ -20,11 +21,9 @@ $Results=@()
 #iterating through server list
 foreach ($server1 in $list) 
 {
-    $counter++
-    #Write-Host "Processing $ip..." -NoNewline       
-        $CIext | Where-Object {$_.hostname -eq $s1} | % {
-            Write-Host "Processing $server1..." -NoNewline
-
+    #$counter++
+    Write-Host "Processing $server1..."
+        $CIext | Where-Object {$_.IP -eq $server1} | ForEach-Object {
             $TableRow = [PSCustomObject]@{
                 IP = $_.ip;
                 Hostname =  $_.Hostname;
@@ -43,7 +42,7 @@ foreach ($server1 in $list)
                 ServiceOwner = $_.ServiceOwner
             }
             $Results += $TableRow
-            Write-Host " OK" -ForegroundColor green
+            Write-Host "OK" -ForegroundColor green
             #Write-progress -activity 'Busy busy busy' -CurrentOperation $ip -PercentComplete (($counter / $list.count) * 100)
         }
 
