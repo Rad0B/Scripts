@@ -5,6 +5,9 @@ function IsConnecting([string[]]$ComputerName = $env:COMPUTERNAME){
 
 }
 
+#
+# add usage on depth 1 = ls -depth 1 -path \\server\$drive$
+#
 
 function Get-FreeSpace ([string[]]$DriveLetter,[switch]$AllDrives,[string[]]$ComputerName = $env:COMPUTERNAME){
     
