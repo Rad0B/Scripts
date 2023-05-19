@@ -12,8 +12,46 @@ $CIext = Invoke-RestMethod -Uri $uri
 #
 ##############################
 $list = @"
-#IP
-"@ -split "\n" | foreach-object {$_.trim()}
+SF160SV00340
+SF160SV00341
+SF160SV00342
+SF160SV00343
+SF160SV00344
+SF160SV00345
+SF160SV00352
+SF160SV00353
+SF160SV00354
+SF160SV00355
+SF160SV00356
+SF160SV00357
+SF160SV00924
+SF160SV00925
+SF160SV00926
+SF160SV00927
+SF160SV00928
+SF160SV00929
+SF160SV00930
+SF160SV00931
+SF160SV00932
+SF160SV00933
+SF160SV00934
+SF160SV00935
+SF160SV00924
+SF160SV00925
+SF160SV00926
+SF160SV00927
+SF160SV00928
+SF160SV00929
+SF160SV00352
+SF160SV00353
+SF160SV00354
+SF160SV00355
+SF160SV00356
+SF160SV00357
+"@ -split "\n" | ? {$_ -ne ""} | foreach-object {$_.trim()}  | Select-Object -Unique
+
+
+
 
 # Adding results to empty array
 $Results=@()
@@ -23,18 +61,19 @@ foreach ($server1 in $list)
 {
     #$counter++
     Write-Host "Processing $server1..."
-        $CIext | Where-Object {$_.IP -eq $server1} | ForEach-Object {
+        $CIext | Where-Object {$_.hostname -eq $server1} | ForEach-Object {
             $TableRow = [PSCustomObject]@{
                 IP = $_.ip;
                 Hostname =  $_.Hostname;
                 Domain = $_.Domain;           
-                Customer = $_.Customer;
+                Customer = $_.Company;
                 FQDN = $_.fqdn;
                 OS = $_.OS;
                 HardwareType = $_.HardwareType
                 IPCMDBStatus = $_.IPCMDBStatus;
                 Description = $_.Description;
                 BASystem = $_.BASystem;
+                DeployWindow = $_.PackageDeployWindow;
                 ScannedModel = $_.ScannedModel
                 Application = $_.BASystem.Owner
                 ApplicationName = $_.BASystem.Name
