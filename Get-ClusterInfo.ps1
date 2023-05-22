@@ -1,143 +1,187 @@
-function Get-ClusterInfo{
+Clear-Host
+
+$servers = @"
+localhost
+"@ -split "\r\n" | Select-Object -Unique
+
+$Logs=@()
+$NoOfLastReboots = 5
+$timestart = [datetime]'05/12/2023 00:00:00'
+$timeend = [datetime]'05/12/2023 20:00:00'
+$RebootTimes = [datetime]'05/01/2023 00:00:00'
+
+foreach($s1 in $servers){
+
+    $ErrorActionPreference = "Stop"
+
+    try{
+
+        Write-Host "Checking server $s1" -ForegroundColor Magenta
+        $Logs += Invoke-Command -ComputerName $s1 -ScriptBlock {
+
+           ## Reboot times
+
+           $RebootsPerServer = Get-WinEvent -LogName System | ? providername -EQ "User32" | ? timecreated -ge $using:RebootTimes
+            if($RebootsPerServer.count -ge 1){
+               $RebootsPerServer | % {
+                    [PSCustomObject]@{
+                        Type = "Reboots"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $_.TimeCreated
+                        ProviderName = $_.ProviderName
+                        LogsLevel = $_.LevelDisplayName
+                        Message = $_.Message
+                    }
+               }
+            }
+            else{
+                [PSCustomObject]@{
+                    Type = "Reboots"
+                    Server = $env:COMPUTERNAME
+                    TimeCreated = $null
+                    ProviderName = $null
+                    LogsLevel = $null
+                    Message = "No Reboots during month: $($using:RebootTimes.Date.Month)/$($using:RebootTimes.Date.Year)" 
+                }
+            }
+
+            ### Patching events
+
+            $PatchingPerServer = Get-WinEvent -LogName Setup | ? TimeCreated -ge $using:RebootTimes | ? Message -Match "successfully changed to the Installed state"
+            if($PatchingPerServer.count -ge 1){
+               $PatchingPerServer | % {
+                    [PSCustomObject]@{
+                        Type = "Patching"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $_.TimeCreated
+                        ProviderName = $_.ProviderName
+                        LogsLevel = $_.LevelDisplayName
+                        Message = $_.Message
+                    }
+               }
+            }
+            else{
+                [PSCustomObject]@{
+                    Type = "Patching"
+                    Server = $env:COMPUTERNAME
+                    TimeCreated = $nullvcx
+                    ProviderName = $null
+                    LogsLevel = $null
+                    Message = "No patching KBs installed during month: $($using:RebootTimes.Date.Month)/$($using:RebootTimes.Date.Year)"
+                }
+            }
+
+            ### Installation.log events
+            #Write-Host "Contents of Installation.log around $(($using:timestart).ToShortDateString())"
+            
+            if(cat C:\logs\installation.log | sls "\.05\.2023"){
+                
+                $InstallationLogCnt = cat C:\logs\installation.log | sls "\.05\.2023" | sls "Packagename"
+                $InstallationLogCnt | % {
+                    #datetime conversion
+                    $TimeCreatedConvertSplit = ($_.ToString().Substring(0,19)).Split(".")
+                    $TimeCreatedReorder = '{0}.{1}.{2} {3}' -f $TimeCreatedConvertSplit[1],$TimeCreatedConvertSplit[0],$TimeCreatedConvertSplit[2],$TimeCreatedConvertSplit[3]
+
+                    [PSCustomObject]@{
+                        Type = "PackagesDeploy"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = [datetime]$TimeCreatedReorder
+                        ProviderName = $_.ProviderName
+                        LogsLevel = $_.LevelDisplayName
+                        Message = $_.ToString().Substring(20,$_.ToString().Length - 20) -replace '\s{2,}',' '
+                    }
+                }
+            }
+            else{
+                    [PSCustomObject]@{
+                        Type = "PackagesDeploy"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $null
+                        ProviderName = $null
+                        LogsLevel = $null
+                        Message = "No contents during month: $($using:RebootTimes.Date.Month)/$($using:RebootTimes.Date.Year)" 
+                    }
+            }
+
+            ####
+            #   Checking error,critical, warning logs from System
+            ####
+
+            ### Installation.log events
+            #Write-Host "Contents of Installation.log around $(($using:timestart).ToShortDateString())"
+            
+            $SystemErrorLogs = Get-WinEvent -FilterHashtable @{LogName="System";StartTime=$using:timestart;EndTime=$using:timeend}`
+            | Where-Object LevelDisplayName -ne "information"`
+            | Sort-Object -Property TimeCreated -Descending
+            
+            if($SystemErrorLogs.count -ge 1){
+               $SystemErrorLogs | % {
+                    [PSCustomObject]@{
+                        Type = "SystemLogs"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $_.TimeCreated
+                        ProviderName = $_.ProviderName
+                        LogsLevel = $_.LevelDisplayName
+                        Message = $_.Message
+                    }
+               }
+            }
+            else{
+                [PSCustomObject]@{
+                    Type = "SystemLogs"
+                    Server = $env:COMPUTERNAME
+                    TimeCreated = $null
+                    ProviderName = $null
+                    LogsLevel = $null
+                    Message = "No system error/warning logs during time span: $using:timestart - $using:timeend" 
+                }
+            }
+
+            #### All KBs installed
+
+        $AllKBsPerServer = Get-WinEvent -LogName Setup | ? TimeCreated -ge ([datetime]'01/01/2023 00:00:00') | ? Message -Match "successfully changed to the Installed state"
+            if($AllKBsPerServer.count -ge 1){
+               $AllKBsPerServer | % {
+                    [PSCustomObject]@{
+                        Type = "PatchingState"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $_.TimeCreated
+                        ProviderName = ($_.Message).TrimStart("Package ").TrimEnd(" was successfully changed to the Installed state.")
+                        LogsLevel = $_.LevelDisplayName
+                        Message = $_.Message
+                    }
+               }
+            }
+            else{
+                [PSCustomObject]@{
+                        Type = "PatchingState"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $null
+                        ProviderName = $null
+                        LogsLevel = $null
+                        Message = "KBs not found"
+                    }
+            }
+
+            #### Proxy settings netsh winhttp show proxy
+
+            $ProxyPerServer =  (netsh winhttp show proxy) -split "\r"
+            $ProxyPerServerParsed = $null
+            for($i=0;$i -le $ProxyPerServer.Length;$i++){[string]$ProxyPerServerParsed += $ProxyPerServer[$i]}
+                    [PSCustomObject]@{
+                        Type = "Proxy(global)"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $null
+                        ProviderName = $null
+                        LogsLevel = $null
+                        Message = $ProxyPerServerParsed
+                    }   
+        }#end invoke
     
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$false,ValueFromPipeline)]
-        [string]$Cluster = $($env:COMPUTERNAME),
-        [switch]$Detailed = $false # to check
-    )      
-
-    # use this server as testing environment -> sf100sv90532.jnmain50.corp.jndata.net
-    #
-    #disk sizes and locations - maybe a switch operator
-    #cluster shares details 
-    #last cluster events last 24h
-            
-    #Virtual Terminal escape sequences
-    begin{
-        $esc =[char]27
-        $Green = 92
-        $Red = 91
-        $Yellow = 93
-
-        $CurrentErrorPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
     }
-    process{
-            
-        try{
-                $Clustername = Get-Cluster -Name $Cluster
-            }
-        catch{Write-Warning $error[0].Exception.Message ; break}
-            
-            Write-Host "Info taken: $((Get-Date).Datetime) (via $env:COMPUTERNAME)" -ForegroundColor Cyan
-            Write-Host ""
-            Write-Host "Nodes" -ForegroundColor Cyan -NoNewline
-            $ClusterNodes = $Clustername | Get-ClusterNode
-            try{
-                    $ClusterNodes | % {
-                        [PSCustomObject]@{
-                            Node = $_.NodeName
-                            Cluster = $_.Cluster
-                            State = $_.State
-                            LastBootTime = $((get-ciminstance win32_operatingsystem -ComputerName $_.NodeName -ea Stop).Lastbootuptime)
-                            ClusSvcLastStart = (Get-WinEvent -FilterHashtable @{Logname="System";ID=7036} -ComputerName $_.NodeName -ea Stop | ? Message -like "*Cluster Service service entered the running state*" | Select-Object -First 1).timeCreated
-                            NodeIP = (Get-NetIPConfiguration -ComputerName $_.NodeName).ipv4address.ipv4address
-                        }
-                    } | Format-Table -AutoSize -Wrap
-                }catch{
-                "" ; Write-Warning $error[0].Exception.Message
-                $ClusterNodes | ForEach-Object {
-                    [PSCustomObject]@{
-                        Node = $_.NodeName
-                        Cluster = $_.Cluster
-                        State = $_.State
-                    }
-                    } | Format-Table -AutoSize -Wrap
-            }
-            
-            Write-Host "Resources / Groups" -ForegroundColor Cyan -NoNewline
-            $ClusterResources = $Clustername | Get-ClusterResource | Sort-Object -Property Ownergroup
-            $ClusterResources | ForEach-Object{
-            if($Host.UI.SupportsVirtualTerminal -eq $true){
-                $ResourceState = 
-                if (($_.State -ne 'Online') -and ($_.OwnerGroup -match "Offline")){"$esc[${Yellow}m$($_.State)$esc[0m"}
-                elseif(($_.State -ne 'Online') -and ($_.OwnerGroup -notmatch "Offline")){"$esc[${Red}m$($_.State)$esc[0m"}
-                else {$_.State}
-            }else {$ResourceState = $_.State}
-                    [PSCustomObject]@{
-                        ResourceName = $_.Name
-                        State = $ResourceState #$_.State
-                        OwnerGroup = $_.OwnerGroup
-                        Ownernode = $_.Ownernode
-                        ResourceType = $_.ResourceType
-                    }
-                } | Format-Table -AutoSize -Wrap
-            
-            Write-Host "Network" -ForegroundColor Cyan -NoNewline
-            $ClusterNetwork = $Clustername | Get-ClusterNetwork
-            $ClusterNetworkNICs = $Clustername | get-clusternetworkinterface
-            $ClusterNetworkNICs | % {
-                [PSCustomObject]@{         
-                    AdapterName = $_.Name
-                    IP = $_.Address
-                    State = $_.State
-                    AdapterType = $_.Adapter                  
-                    Node = $_.Node
-                    "ClusterNetwork : State" = "$($ClusterNetwork.Name) : $($ClusterNetwork.State)"
-                }
-            } | Format-Table -AutoSize -Wrap
-
-            if($Detailed){
-
-                $ClusterResourceDisks = $Clustername | Get-ClusterResource | ? resourcetype -EQ "Physical Disk"
-                Write-Host "Disks ($($ClusterResourceDisks.Count))" -ForegroundColor Cyan -NoNewline
-                $DiskInfo=@()
-                if(!($ClusterResourceDisks.count)){
-                    Write-Host ""
-                    Write-Host "No cluster disks configured" -ForegroundColor Yellow 
-                }
-                else{
-                    $ClusterResourceDisks | ForEach-Object {
-
-                        try{
-                            $ClusterResourceDisk1 = $_
-                            $MSClusterRes = Get-WmiObject MSCluster_Resource -Namespace root/mscluster -ComputerName $Clustername.Name  | ? { $_.ID -eq $ClusterResourceDisk1.ID}
-                            $MSClusterDisk = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterRes} Where ResultClass=MSCluster_Disk" -ComputerName $Clustername.Name 
-                            $MSClusterPartition = Get-WmiObject -Namespace root/mscluster -Query "Associators of {$MSClusterDisk} Where ResultClass=MSCluster_DiskPartition" -ComputerName $Clustername.Name
-
-                            #HealthStatus info
-                                    if ($ClusterResourceDisk1.OwnerNode.Name -eq $env:COMPUTERNAME){
-                                        $Health = Get-Volume -Path "\\?\Volume{$($MSClusterPartition.VolumeGuid)}\"
-                                    } else {
-                                        $Health = Invoke-Command -ComputerName $($ClusterResourceDisk1.OwnerNode.Name) -ScriptBlock `
-                                        {Get-Volume -Path "\\?\Volume{$(($using:MSClusterPartition).VolumeGuid)}\"}
-                                    }
-                                
-
-                                $DiskInfo += [PSCustomObject]@{
-                                    Name = $ClusterResourceDisk1.Name;
-                                    ClusterRole = $ClusterResourceDisk1.OwnerGroup
-                                    'Drive/GUID' = $MSClusterPartition.Path
-                                    'FreeSpace%' = "$([math]::Round(($MSClusterPartition.FreeSpace / $MSClusterPartition.TotalSize)*100,2))%"
-                                    #'FreeSpace%' = "Free: $($MSClusterPartition.FreeSpace) / Total Size: $($MSClusterPartition.TotalSize)"
-                                    HealthStatus = $Health.HealthStatus
-                                    OpsStatus = $Health.OperationalStatus
-                                }
-                        }
-                        catch{
-                            ""; Write-Warning "Drive/GUID: $($MSClusterPartition.Path) >> $($Error[0].Exception.Message)"
-                        }
-                    }
-                }
-
-                $DiskInfo | Format-Table -AutoSize -Wrap
-
-            }
-    }
-    end {
-        $ErrorActionPreference = $CurrentErrorPreference
+    catch{       
+        $Error[0].Exception.Message
     }
 }
-            
-Get-ClusterInfo -Detailed
+
+return $Logs
