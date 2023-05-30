@@ -11,9 +11,9 @@ function StayingActiveOnSession{
         [int]$sleep = 200,
         [int]$MousePositionInteration = 1
     )
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-Add-Type -assemblyName System.Windows.Forms
-$WShell = New-Object -ComObject "WScript.Shell"
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+    Add-Type -assemblyName System.Windows.Forms
+    $WShell = New-Object -ComObject "WScript.Shell"
 
     while($true){
         Clear-Host

@@ -14,7 +14,7 @@ function Unarchive-Certificate{
 
             $personalStore = New-Object System.Security.Cryptography.X509Certificates.X509Store(“\\$ComputerName1\My”,”LocalMachine”)
             $personalStore.Open('ReadWrite, IncludeArchived')
-                 
+
             if($SerialNumber){
             
                 $FoundCertbySerial = $personalStore.Certificates | Where-Object {$_.SerialNumber -eq $SerialNumber}
