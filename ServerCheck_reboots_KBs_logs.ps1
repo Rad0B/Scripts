@@ -1,9 +1,8 @@
-
 Clear-Host
 
 $servers = @"
+localhost
 "@ -split "\r\n" | Select-Object -Unique
-
 
 $Logs=@()
 $NoOfLastReboots = 5
@@ -11,7 +10,7 @@ $timestart = [datetime]'05/12/2023 00:00:00'
 $timeend = [datetime]'05/12/2023 20:00:00'
 $RebootTimes = [datetime]'05/01/2023 00:00:00'
 
-foreach($s1 in $servers[3]){
+foreach($s1 in $servers){
 
     $ErrorActionPreference = "Stop"
 
@@ -20,7 +19,7 @@ foreach($s1 in $servers[3]){
         Write-Host "Checking server $s1" -ForegroundColor Magenta
         $Logs += Invoke-Command -ComputerName $s1 -ScriptBlock {
 
-            ### Reboot times
+           ## Reboot times
 
            $RebootsPerServer = Get-WinEvent -LogName System | ? providername -EQ "User32" | ? timecreated -ge $using:RebootTimes
             if($RebootsPerServer.count -ge 1){
@@ -137,6 +136,46 @@ foreach($s1 in $servers[3]){
                     Message = "No system error/warning logs during time span: $using:timestart - $using:timeend" 
                 }
             }
+
+            #### All KBs installed
+
+        $AllKBsPerServer = Get-WinEvent -LogName Setup | ? TimeCreated -ge ([datetime]'01/01/2023 00:00:00') | ? Message -Match "successfully changed to the Installed state"
+            if($AllKBsPerServer.count -ge 1){
+               $AllKBsPerServer | % {
+                    [PSCustomObject]@{
+                        Type = "PatchingState"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $_.TimeCreated
+                        ProviderName = ($_.Message).TrimStart("Package ").TrimEnd(" was successfully changed to the Installed state.")
+                        LogsLevel = $_.LevelDisplayName
+                        Message = $_.Message
+                    }
+               }
+            }
+            else{
+                [PSCustomObject]@{
+                        Type = "PatchingState"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $null
+                        ProviderName = $null
+                        LogsLevel = $null
+                        Message = "KBs not found"
+                    }
+            }
+
+            #### Proxy settings netsh winhttp show proxy
+
+            $ProxyPerServer =  (netsh winhttp show proxy) -split "\r"
+            $ProxyPerServerParsed = $null
+            for($i=0;$i -le $ProxyPerServer.Length;$i++){[string]$ProxyPerServerParsed += $ProxyPerServer[$i]}
+                    [PSCustomObject]@{
+                        Type = "Proxy(global)"
+                        Server = $env:COMPUTERNAME
+                        TimeCreated = $null
+                        ProviderName = $null
+                        LogsLevel = $null
+                        Message = $ProxyPerServerParsed
+                    } 
         }#end invoke
     
     }
