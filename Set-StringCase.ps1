@@ -1,4 +1,4 @@
-function StringCase {
+function Set-StringCase {
 
     param(
     [string[]]$String,
